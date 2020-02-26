@@ -1,0 +1,8 @@
+name: PowerBall
+main: me.endureblackout.PowerBall.PowerBall
+version: 1.0
+description: Alternative to crates.
+author: [EndureBlackout]
+commands:
+  pb:
+    description: Main PowerBall command.
