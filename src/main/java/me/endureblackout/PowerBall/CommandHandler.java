@@ -8,7 +8,6 @@ import java.util.Set;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -25,6 +24,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -43,7 +43,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
 			
-			if (cmd.getName().equalsIgnoreCase("pb")) {
+			if (cmd.getName().equalsIgnoreCase("mc")) {
 				if (args.length == 1) {
 					if (args[0].equalsIgnoreCase("spawn") && p.hasPermission("powerball.spawn")) {
 						ItemStack ball = new ItemStack(Material.DRAGON_EGG);
@@ -54,10 +54,12 @@ public class CommandHandler implements CommandExecutor, Listener {
 						List<String> lore = new ArrayList<String>();
 						
 						if (bMeta.getLore() == null) {
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&eUSE /PB USE TO OPEN"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&7&k/mccuse"));
 						} else {
 							lore.addAll(bMeta.getLore());
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&eUSE /PB USE TO OPEN"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&7&k/mccuse"));
 						}
 
 						bMeta.setLore(lore);
@@ -68,13 +70,15 @@ public class CommandHandler implements CommandExecutor, Listener {
 						Set<String> items = itemSec.getKeys(false);
 						Inventory pbMenu = Bukkit.createInventory(null, 27, ChatColor.DARK_PURPLE + "Prize Egg");
 
-						if (p.getItemInHand().getType().equals(Material.DRAGON_EGG)) {
+						if (p.getInventory().getItemInMainHand().getType().equals(Material.DRAGON_EGG)) {
 							for (String k : items) {
 								ConfigurationSection item = itemSec.getConfigurationSection(k);
 
 								double chance = Math.random();
 								if (chance <= itemSec.getConfigurationSection(k).getDouble("Chance")) {
-									if (item.getString("Item").equalsIgnoreCase("potion")) {
+									if(isLeather(item.getName())) {
+										pbMenu.setItem(pbMenu.firstEmpty(), createLeatherItem(item.getName()));
+									} else if (item.getString("Item").equalsIgnoreCase("potion")) {
 										pbMenu.setItem(pbMenu.firstEmpty(), getPotion(item.getString("Item"), item.getString("Name"), item.getStringList("Lore"), item.getStringList("Effects"), item.getInt("Amount")));
 									} else {
 										pbMenu.setItem(pbMenu.firstEmpty(), getItem(item.getString("Item"), item.getString("Name"), item.getStringList("Lore"), item.getStringList("Enchantments"), item.getInt("Amount")));
@@ -109,10 +113,12 @@ public class CommandHandler implements CommandExecutor, Listener {
 						List<String> lore = new ArrayList<String>();
 						
 						if (bMeta.getLore() == null) {
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&eUSE /PB USE TO OPEN"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
 						} else {
 							lore.addAll(bMeta.getLore());
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&eUSE /PB USE TO OPEN"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
 						}
 
 						bMeta.setLore(lore);
@@ -120,6 +126,42 @@ public class CommandHandler implements CommandExecutor, Listener {
 						pTo.getInventory().addItem(ball);
 					}
 				}
+			}
+		} else {
+			if(args[0].equalsIgnoreCase("spawn")) {
+				ItemStack ball = new ItemStack(Material.DRAGON_EGG);
+				ItemMeta bMeta = ball.getItemMeta();
+				
+				String sendTo = args[1];
+				Player pTo = null;
+				
+				for(Player f : Bukkit.getOnlinePlayers()) {
+					if (f.getName().equalsIgnoreCase(sendTo)) {
+						pTo = f;
+					}
+				}
+				
+				if(pTo == null) {
+					System.out.println("Could not find player " + sendTo);
+					return true;
+				}
+
+				bMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("PBName")));
+
+				List<String> lore = new ArrayList<String>();
+				
+				if (bMeta.getLore() == null) {
+					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+					lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
+				} else {
+					lore.addAll(bMeta.getLore());
+					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+					lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
+				}
+
+				bMeta.setLore(lore);
+				ball.setItemMeta(bMeta);
+				pTo.getInventory().addItem(ball);
 			}
 		}
 
@@ -181,11 +223,12 @@ public class CommandHandler implements CommandExecutor, Listener {
 	}
 
 	public ItemStack getItem(String type, String name, List<String> lore, List<String> enchants, int amount) {
+		System.out.println(type);
 		ItemStack item = new ItemStack(Material.getMaterial(type.toUpperCase()));
 		ItemMeta itemMeta = item.getItemMeta();
 
 		ArrayList<String> itemLore = new ArrayList<>();
-
+		
 		if (name != null) {
 			itemMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', name));
 		}
@@ -225,5 +268,47 @@ public class CommandHandler implements CommandExecutor, Listener {
 				}
 			}
 		}
+	}
+	 
+	public boolean isLeather (String item) {
+		ConfigurationSection itemSection = config.getConfigurationSection("Items." + item);
+		if(itemSection.getString("Item").toLowerCase().contains("leather")) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public ItemStack createLeatherItem(String item) {
+		ConfigurationSection itemSection = config.getConfigurationSection("Items." + item);
+		
+		String itemString = itemSection.getString("Item");
+		String colorString = itemSection.getString("Color");
+		int amount = itemSection.getInt("Amount");
+		
+		ItemStack leatherArmor = new ItemStack(Material.getMaterial(itemString.toUpperCase()), amount);
+		LeatherArmorMeta armorMeta = (LeatherArmorMeta) leatherArmor.getItemMeta();
+		
+		List<String> loreList = new ArrayList<String>();
+		
+		if(itemSection.getStringList("Lore") != null) {
+			List<String> lore = itemSection.getStringList("Lore");
+			
+			for(String  l : lore) {
+				loreList.add(ChatColor.translateAlternateColorCodes('&', l));
+			}
+			
+			armorMeta.setLore(loreList);
+		}
+		
+		Colors color = new Colors(colorString);
+		
+		armorMeta.setColor(color.getColor());
+		
+		armorMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', itemSection.getString("Name")));
+		
+		leatherArmor.setItemMeta(armorMeta);
+		
+		return leatherArmor;
 	}
 }
