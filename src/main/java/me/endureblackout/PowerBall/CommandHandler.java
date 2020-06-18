@@ -191,7 +191,13 @@ public class CommandHandler implements CommandExecutor, Listener {
 			for (ItemStack item : items) {
 				if (item != null && p.getInventory().firstEmpty() != -1) {
 					p.getInventory().addItem(item);
-				} else {
+				} else if (item != null &&p.getInventory().firstEmpty() == -1 && p.getInventory().contains(item.getType())) {
+					for (ItemStack i : p.getInventory().getContents()) {
+						if (i != null && i.getType().equals(item.getType())) {
+							p.getInventory().addItem(item);
+						}
+					}
+				} else if (item != null && p.getInventory().firstEmpty() == -1) {
 					p.getWorld().dropItem(p.getLocation(), item);
 				}
 			}
