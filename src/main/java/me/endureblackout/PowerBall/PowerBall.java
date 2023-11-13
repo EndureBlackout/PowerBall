@@ -15,6 +15,6 @@ public class PowerBall extends JavaPlugin {
 		
 		Bukkit.getPluginManager().registerEvents(new CommandHandler(this, config), this);
 		
-		getCommand("mc").setExecutor(new CommandHandler(this, config));
+		getCommand("pb").setExecutor(new CommandHandler(this, config));
 	}
 }

@@ -1,4 +1,4 @@
-
+	
 package me.endureblackout.PowerBall;
 
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 		if (sender instanceof Player) {
 			Player p = (Player) sender;
 
-			if (cmd.getName().equalsIgnoreCase("mc")) {
+			if (cmd.getName().equalsIgnoreCase("pb")) {
 				if (args.length == 1) {
 					if (args[0].equalsIgnoreCase("spawn") && p.hasPermission("powerball.spawn")) {
 						ItemStack ball = new ItemStack(Material.DRAGON_EGG);
@@ -54,11 +54,11 @@ public class CommandHandler implements CommandExecutor, Listener {
 						List<String> lore = new ArrayList<String>();
 
 						if (bMeta.getLore() == null) {
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
 							lore.add(ChatColor.translateAlternateColorCodes('&', "&7&k/mccuse"));
 						} else {
 							lore.addAll(bMeta.getLore());
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
 							lore.add(ChatColor.translateAlternateColorCodes('&', "&7&k/mccuse"));
 						}
 
@@ -120,11 +120,11 @@ public class CommandHandler implements CommandExecutor, Listener {
 						List<String> lore = new ArrayList<String>();
 
 						if (bMeta.getLore() == null) {
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
 							lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
 						} else {
 							lore.addAll(bMeta.getLore());
-							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
 							lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
 						}
 
@@ -158,11 +158,11 @@ public class CommandHandler implements CommandExecutor, Listener {
 				List<String> lore = new ArrayList<String>();
 
 				if (bMeta.getLore() == null) {
-					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
 					lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
 				} else {
 					lore.addAll(bMeta.getLore());
-					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/mc use"));
+					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
 					lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
 				}
 

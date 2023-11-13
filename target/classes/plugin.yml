@@ -5,5 +5,5 @@ api-version: 1.15
 description: Alternative to crates.
 author: [EndureBlackout]
 commands:
-  mc:
+  pb:
     description: Main PowerBall command.
