@@ -3,6 +3,7 @@ main: me.endureblackout.PowerBall.PowerBall
 version: 1.0
 api-version: 1.15
 description: Alternative to crates.
+depend: VanityGear
 author: [EndureBlackout]
 commands:
   pb:
