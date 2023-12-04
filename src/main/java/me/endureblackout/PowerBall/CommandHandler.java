@@ -36,6 +36,7 @@ import org.bukkit.inventory.meta.trim.TrimPattern;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
 
+import de.tr7zw.nbtapi.NBTItem;
 import me.endureblackout.VanityGear.VanityGear;
 import me.endureblackout.VanityGear.Helpers.Armor;
 import me.endureblackout.VanityGear.Helpers.Weapon;
@@ -100,8 +101,6 @@ public class CommandHandler implements CommandExecutor, Listener {
 														item.getStringList("Lore"), item.getStringList("Enchantments"),
 														item.getString("Trim"), item.getString("Pattern"),
 														item.getInt("Amount")));
-									} else if (isLeather(item.getName())) {
-										pbMenu.setItem(pbMenu.firstEmpty(), createLeatherItem(item.getName()));
 									} else if (item.getString("Item").toLowerCase().contains("potion")) {
 										pbMenu.setItem(pbMenu.firstEmpty(),
 												getPotion(item.getString("Item"), item.getString("Name"),
@@ -111,7 +110,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 										pbMenu.setItem(pbMenu.firstEmpty(),
 												getItem(item.getString("Item"), item.getString("Name"),
 														item.getStringList("Lore"), item.getStringList("Enchantments"),
-														item.getInt("Amount")));
+														item.getInt("Amount"), item.isSet("Voucher") ? item.getString("Voucher") : null));
 									}
 								}
 							}
@@ -239,6 +238,12 @@ public class CommandHandler implements CommandExecutor, Listener {
 										items.set(name + ".Amount", item.getAmount());
 										items.set(name + ".Chance", chance);
 
+										NBTItem nbtItem = new NBTItem(item);
+
+										if (nbtItem.hasTag("voucher")) {
+											items.set(name + ".Voucher", nbtItem.getString("voucher"));
+										}
+
 										if (iMeta.hasLore()) {
 											List<String> loreList = iMeta.getLore();
 
@@ -305,11 +310,11 @@ public class CommandHandler implements CommandExecutor, Listener {
 										p.sendMessage(ChatColor.GREEN + "Item added successfully");
 									}
 								}
-							} else  {
+							} else {
 								items.set(name + ".Item", item.getType().toString().toLowerCase());
 								items.set(name + ".Amount", item.getAmount());
 								items.set(name + ".Chance", chance);
-								
+
 								config.set("Items", items);
 								core.getConfig().set("Items", items);
 								core.saveConfig();
@@ -422,7 +427,8 @@ public class CommandHandler implements CommandExecutor, Listener {
 		return item;
 	}
 
-	public ItemStack getItem(String type, String name, List<String> lore, List<String> enchants, int amount) {
+	public ItemStack getItem(String type, String name, List<String> lore, List<String> enchants, int amount,
+			String voucher) {
 		ItemStack item = new ItemStack(Material.getMaterial(type.toUpperCase()));
 		ItemMeta itemMeta = item.getItemMeta();
 
@@ -448,6 +454,14 @@ public class CommandHandler implements CommandExecutor, Listener {
 		itemMeta.setLore(itemLore);
 		item.setItemMeta(itemMeta);
 		item.setAmount(amount);
+
+		if (voucher != null) {
+			NBTItem nbtItem = new NBTItem(item);
+			nbtItem.setString("voucher", voucher);
+			
+			item = nbtItem.getItem();
+		}
+
 		return item;
 	}
 
@@ -521,15 +535,6 @@ public class CommandHandler implements CommandExecutor, Listener {
 				}
 			}
 		}
-	}
-
-	public boolean isLeather(String item) {
-		ConfigurationSection itemSection = config.getConfigurationSection("Items." + item);
-		if (itemSection.getString("Item").toLowerCase().contains("leather")) {
-			return true;
-		}
-
-		return false;
 	}
 
 	public ItemStack createLeatherItem(String item) {
