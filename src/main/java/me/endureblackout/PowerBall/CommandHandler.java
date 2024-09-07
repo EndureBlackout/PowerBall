@@ -2,21 +2,29 @@
 package me.endureblackout.PowerBall;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
 import org.bukkit.Material;
+import org.bukkit.FireworkEffect.Builder;
+import org.bukkit.FireworkEffect.Type;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -27,6 +35,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ArmorMeta;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -37,9 +46,12 @@ import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
 
 import de.tr7zw.nbtapi.NBTItem;
+import io.lumine.mythic.bukkit.adapters.BukkitItemStack;
+import io.lumine.mythic.core.items.MythicItem;
 import me.endureblackout.VanityGear.VanityGear;
 import me.endureblackout.VanityGear.Helpers.Armor;
 import me.endureblackout.VanityGear.Helpers.Weapon;
+import su.nightexpress.excellentcrates.key.CrateKey;
 
 public class CommandHandler implements CommandExecutor, Listener {
 
@@ -83,6 +95,22 @@ public class CommandHandler implements CommandExecutor, Listener {
 						Inventory pbMenu = Bukkit.createInventory(null, 27, ChatColor.DARK_PURPLE + "Prize Egg");
 
 						if (p.getInventory().getItemInMainHand().getType().equals(Material.DRAGON_EGG)) {
+							Firework firework = (Firework) p.getLocation().getWorld().spawnEntity(p.getLocation(),
+									EntityType.FIREWORK);
+							FireworkMeta fMeta = firework.getFireworkMeta();
+
+							Builder fireworkEffect = FireworkEffect.builder().with(Type.BURST).withColor(Color.RED)
+									.withColor(Color.BLUE).withColor(Color.WHITE).withColor(Color.PURPLE)
+									.withColor(Color.YELLOW).flicker(true);
+							
+							fMeta.addEffect(fireworkEffect.build());
+							fMeta.setPower(0);
+							fMeta.setDisplayName("powerball firework");
+							
+							firework.setFireworkMeta(fMeta);
+							firework.setGlowing(true);
+							firework.detonate();							
+
 							for (String k : items) {
 								ConfigurationSection item = itemSec.getConfigurationSection(k);
 
@@ -101,6 +129,28 @@ public class CommandHandler implements CommandExecutor, Listener {
 														item.getStringList("Lore"), item.getStringList("Enchantments"),
 														item.getString("Trim"), item.getString("Pattern"),
 														item.getInt("Amount")));
+									} else if (item.isSet("KeyId")) {
+										CrateKey key = PowerBall.CRATES_API.getKeyManager()
+												.getKeyById(item.getString("KeyId"));
+
+										ItemStack keyItem = key.getItem();
+										keyItem.setAmount(item.getInt("Amount"));
+
+										pbMenu.setItem(pbMenu.firstEmpty(), keyItem);
+									} else if (item.isSet("MythicName")) {
+										Collection<MythicItem> mItems = PowerBall.MM.getItemManager().getItems();
+
+										for (MythicItem mItem : mItems) {
+											if (mItem.getInternalName()
+													.equalsIgnoreCase(item.getString("MythicName"))) {
+												BukkitItemStack bItem = (BukkitItemStack) mItem
+														.generateItemStack(item.getInt("Amount"));
+												ItemStack pbItem = bItem.build();
+
+												pbMenu.setItem(pbMenu.firstEmpty(), pbItem);
+											}
+										}
+
 									} else if (item.getString("Item").toLowerCase().contains("potion")) {
 										pbMenu.setItem(pbMenu.firstEmpty(),
 												getPotion(item.getString("Item"), item.getString("Name"),
@@ -110,7 +160,8 @@ public class CommandHandler implements CommandExecutor, Listener {
 										pbMenu.setItem(pbMenu.firstEmpty(),
 												getItem(item.getString("Item"), item.getString("Name"),
 														item.getStringList("Lore"), item.getStringList("Enchantments"),
-														item.getInt("Amount"), item.isSet("Voucher") ? item.getString("Voucher") : null));
+														item.getInt("Amount"),
+														item.isSet("Voucher") ? item.getString("Voucher") : null));
 									}
 								}
 							}
@@ -169,6 +220,60 @@ public class CommandHandler implements CommandExecutor, Listener {
 
 							return true;
 						} else {
+							if (PowerBall.MM.getItemManager().isMythicItem(item)) {
+								String mItemName = PowerBall.MM.getItemManager().getMythicTypeFromItem(item);
+
+								if (mItemName == null) {
+									sender.sendMessage(ChatColor.RED + "Mythic Item not found.");
+
+									return true;
+								}
+
+								items.set(name + ".MythicName", mItemName);
+								items.set(name + ".Amount", item.getAmount());
+								items.set(name + ".Chance", chance);
+
+								config.set("Items", items);
+
+								core.getConfig().set("Items", items);
+								core.saveConfig();
+
+								sender.sendMessage(ChatColor.GREEN + "MythicMobs item added successfully.");
+
+								return true;
+							}
+
+							if (PowerBall.CRATES_API.getKeyManager().isKey(item)) {
+								CrateKey actualKey = PowerBall.CRATES_API.getKeyManager().getKeyByItem(item);
+								Map<String, CrateKey> keys = PowerBall.CRATES_API.getKeyManager().getKeysMap();
+								String keyId = null;
+
+								for (Entry<String, CrateKey> key : keys.entrySet()) {
+									if (key.getValue().getItem().equals(actualKey.getItem())) {
+										keyId = key.getKey();
+									}
+								}
+
+								if (keyId == null) {
+									sender.sendMessage(ChatColor.RED + "Key not found.");
+
+									return true;
+								}
+
+								items.set(name + ".KeyId", keyId);
+								items.set(name + ".Amount", item.getAmount());
+								items.set(name + ".Chance", chance);
+
+								config.set("Items", items);
+
+								core.getConfig().set("Items", items);
+								core.saveConfig();
+
+								sender.sendMessage(ChatColor.GREEN + "Key added successfully.");
+
+								return true;
+							}
+
 							if (item.hasItemMeta()) {
 								ItemMeta iMeta = item.getItemMeta();
 
@@ -199,16 +304,16 @@ public class CommandHandler implements CommandExecutor, Listener {
 
 										switch (item.getType()) {
 										case LEATHER_HELMET:
-											items.set(name + ".Piece", "helmet");
+											items.set(name + ".Piece", Material.LEATHER_HELMET.toString());
 											break;
 										case LEATHER_CHESTPLATE:
-											items.set(name + ".Piece", "chest");
+											items.set(name + ".Piece", Material.LEATHER_CHESTPLATE.toString());
 											break;
 										case LEATHER_LEGGINGS:
-											items.set(name + ".Piece", "legs");
+											items.set(name + ".Piece", Material.LEATHER_LEGGINGS.toString());
 											break;
 										case LEATHER_BOOTS:
-											items.set(name + ".Piece", "boots");
+											items.set(name + ".Piece", Material.LEATHER_BOOTS.toString());
 											break;
 										default:
 											p.sendMessage(ChatColor.RED + "There was a problem adding this item");
@@ -323,43 +428,46 @@ public class CommandHandler implements CommandExecutor, Listener {
 							}
 						}
 					}
-				}
-			}
-		} else {
-			if (args[0].equalsIgnoreCase("spawn")) {
-				ItemStack ball = new ItemStack(Material.DRAGON_EGG);
-				ItemMeta bMeta = ball.getItemMeta();
 
-				String sendTo = args[1];
-				Player pTo = null;
-
-				for (Player f : Bukkit.getOnlinePlayers()) {
-					if (f.getName().equalsIgnoreCase(sendTo)) {
-						pTo = f;
+					if (args[0].equalsIgnoreCase("spawn")) {
+						ItemStack ball = new ItemStack(Material.DRAGON_EGG);
+						ItemMeta bMeta = ball.getItemMeta();
+		
+						String sendTo = args[1];
+						int amount = args[2] != null ? Integer.parseInt(args[2]) : 1;
+						Player pTo = null;
+		
+						for (Player f : Bukkit.getOnlinePlayers()) {
+							if (f.getName().equalsIgnoreCase(sendTo)) {
+								pTo = f;
+							}
+						}
+		
+						if (pTo == null) {
+							System.out.println("Could not find player " + sendTo);
+							return true;
+						}
+		
+						bMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("PBName")));
+		
+						List<String> lore = new ArrayList<String>();
+		
+						if (bMeta.getLore() == null) {
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
+						} else {
+							lore.addAll(bMeta.getLore());
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
+							lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
+						}
+		
+						bMeta.setLore(lore);
+						ball.setItemMeta(bMeta);
+						ball.setAmount(amount);
+		
+						pTo.getInventory().addItem(ball);
 					}
 				}
-
-				if (pTo == null) {
-					System.out.println("Could not find player " + sendTo);
-					return true;
-				}
-
-				bMeta.setDisplayName(ChatColor.translateAlternateColorCodes('&', config.getString("PBName")));
-
-				List<String> lore = new ArrayList<String>();
-
-				if (bMeta.getLore() == null) {
-					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
-					lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
-				} else {
-					lore.addAll(bMeta.getLore());
-					lore.add(ChatColor.translateAlternateColorCodes('&', "&d/pb use"));
-					lore.add(ChatColor.translateAlternateColorCodes('&', "&7/mccuse"));
-				}
-
-				bMeta.setLore(lore);
-				ball.setItemMeta(bMeta);
-				pTo.getInventory().addItem(ball);
 			}
 		}
 
@@ -458,7 +566,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 		if (voucher != null) {
 			NBTItem nbtItem = new NBTItem(item);
 			nbtItem.setString("voucher", voucher);
-			
+
 			item = nbtItem.getItem();
 		}
 
@@ -503,7 +611,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 		if (VanityGear.ARMOR.containsKey(ChatColor.stripColor(displayName.replace("Armor", "")).trim())) {
 			Armor armor = VanityGear.ARMOR.get(ChatColor.stripColor(displayName.replace("Armor", "")).trim());
 
-			return armor.getPiece(piece);
+			return armor.getPiece(Material.getMaterial(piece.toUpperCase()), false);
 		}
 
 		return null;
@@ -521,19 +629,12 @@ public class CommandHandler implements CommandExecutor, Listener {
 
 	public void removePb(Player p) {
 		PlayerInventory inv = p.getInventory();
-		for (ItemStack i : inv.getContents()) {
-			if (i != null) {
-				if (i.getType().equals(Material.DRAGON_EGG)) {
-					if (i.getAmount() == 1) {
-						inv.remove(i);
-					}
+		int eggSlot = p.getInventory().first(Material.DRAGON_EGG);
 
-					int amount = i.getAmount() - 1;
-
-					i.setAmount(amount);
-					break;
-				}
-			}
+		if(inv.getItem(eggSlot).getAmount() == 1) {
+			inv.setItem(eggSlot, null);
+		} else {
+			inv.getItem(eggSlot).setAmount(inv.getItem(eggSlot).getAmount() - 1);
 		}
 	}
 
