@@ -145,7 +145,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 													.equalsIgnoreCase(item.getString("MythicName"))) {
 												BukkitItemStack bItem = (BukkitItemStack) mItem
 														.generateItemStack(item.getInt("Amount"));
-												ItemStack pbItem = bItem.build();
+												ItemStack pbItem = bItem.getItemStack();
 
 												pbMenu.setItem(pbMenu.firstEmpty(), pbItem);
 											}
