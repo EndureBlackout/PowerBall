@@ -21,7 +21,7 @@ public class PowerBall extends JavaPlugin {
 			saveConfig();
 		}
 		
-		CRATES_API = CratesAPI.PLUGIN;
+		CRATES_API = CratesAPI.getPlugin();
 		
 		try {
 			MM = MythicProvider.get();

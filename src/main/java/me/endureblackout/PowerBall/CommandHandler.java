@@ -96,7 +96,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 
 						if (p.getInventory().getItemInMainHand().getType().equals(Material.DRAGON_EGG)) {
 							Firework firework = (Firework) p.getLocation().getWorld().spawnEntity(p.getLocation(),
-									EntityType.FIREWORK);
+									EntityType.FIREWORK_ROCKET);
 							FireworkMeta fMeta = firework.getFireworkMeta();
 
 							Builder fireworkEffect = FireworkEffect.builder().with(Type.BURST).withColor(Color.RED)
@@ -245,7 +245,7 @@ public class CommandHandler implements CommandExecutor, Listener {
 
 							if (PowerBall.CRATES_API.getKeyManager().isKey(item)) {
 								CrateKey actualKey = PowerBall.CRATES_API.getKeyManager().getKeyByItem(item);
-								Map<String, CrateKey> keys = PowerBall.CRATES_API.getKeyManager().getKeysMap();
+								Map<String, CrateKey> keys = PowerBall.CRATES_API.getKeyManager().getKeyByIdMap();
 								String keyId = null;
 
 								for (Entry<String, CrateKey> key : keys.entrySet()) {
